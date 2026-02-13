@@ -1,0 +1,51 @@
+function getRequiredEnv(key: string): string {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+  return value;
+}
+
+function getOptionalEnv(key: string, defaultValue: string): string {
+  return process.env[key] ?? defaultValue;
+}
+
+/**
+ * Get Supabase anon/publishable key.
+ * Supports both legacy ANON_KEY and new PUBLISHABLE_KEY naming.
+ */
+function getSupabaseKey(): string {
+  const publishableKey = process.env["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"];
+  const anonKey = process.env["NEXT_PUBLIC_SUPABASE_ANON_KEY"];
+
+  const key = publishableKey ?? anonKey;
+  if (!key) {
+    throw new Error(
+      "Missing required environment variable: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY or NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    );
+  }
+  return key;
+}
+
+export const env = {
+  // App config
+  NODE_ENV: getOptionalEnv("NODE_ENV", "development"),
+  LOG_LEVEL: getOptionalEnv("LOG_LEVEL", "info"),
+  APP_NAME: getOptionalEnv("APP_NAME", "ai-opti-nextjs-starter"),
+
+  // Workshop table prefix (optional - if set, app tables are prefixed e.g. "cole_projects")
+  TABLE_PREFIX: process.env["TABLE_PREFIX"] ?? "",
+
+  // Supabase config (required)
+  NEXT_PUBLIC_SUPABASE_URL: getRequiredEnv("NEXT_PUBLIC_SUPABASE_URL"),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: getSupabaseKey(),
+
+  // Database config (required)
+  DATABASE_URL: getRequiredEnv("DATABASE_URL"),
+
+  // OpenRouter config (LLM)
+  OPENROUTER_API_KEY: getRequiredEnv("OPENROUTER_API_KEY"),
+  OPENROUTER_MODEL: getOptionalEnv("OPENROUTER_MODEL", "anthropic/claude-haiku-4.5"),
+} as const;
+
+export type Env = typeof env;

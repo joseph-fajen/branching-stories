@@ -1,0 +1,127 @@
+"use client";
+
+import { GitBranch, MessageSquare } from "lucide-react";
+import { useCallback, useState } from "react";
+
+import { Skeleton } from "@/components/ui/skeleton";
+import { useChat } from "@/hooks/use-chat";
+
+import { ChatHeader } from "./chat-header";
+import { ChatInput } from "./chat-input";
+import { ChatSidebar } from "./chat-sidebar";
+import { MessageList } from "./message-list";
+
+export function ChatLayout() {
+  const {
+    conversations,
+    activeConversationId,
+    messages,
+    isStreaming,
+    isLoadingMessages,
+    streamingContent,
+    sendMessage,
+    selectConversation,
+    createNewChat,
+    renameConversation,
+    deleteConversation,
+    forkConversation,
+  } = useChat();
+
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  const activeTitle = conversations.find((c) => c.id === activeConversationId)?.title ?? null;
+
+  const toggleSidebar = useCallback(() => {
+    setIsMobileOpen((prev) => !prev);
+  }, []);
+
+  const closeMobile = useCallback(() => {
+    setIsMobileOpen(false);
+  }, []);
+
+  const handleFork = useCallback(
+    (messageId: string) => {
+      if (activeConversationId) {
+        void forkConversation(activeConversationId, messageId);
+      }
+    },
+    [activeConversationId, forkConversation],
+  );
+
+  const hasMessages = messages.length > 0 || isStreaming;
+
+  return (
+    <div className="flex h-screen">
+      <ChatSidebar
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        onSelectConversation={selectConversation}
+        onNewChat={createNewChat}
+        onRenameConversation={renameConversation}
+        onDeleteConversation={deleteConversation}
+        isMobileOpen={isMobileOpen}
+        onMobileClose={closeMobile}
+      />
+
+      <div className="chat-gradient-bg flex flex-1 flex-col">
+        <ChatHeader title={activeTitle} messages={messages} onToggleSidebar={toggleSidebar} />
+
+        {isLoadingMessages && activeConversationId ? (
+          <div className="flex-1 overflow-y-auto">
+            <div className="mx-auto max-w-3xl space-y-4 py-4">
+              <div className="flex gap-3 px-4 py-3">
+                <Skeleton className="size-8 shrink-0 rounded-full" />
+                <Skeleton className="h-16 w-3/4 rounded-2xl" />
+              </div>
+              <div className="flex flex-row-reverse gap-3 px-4 py-3">
+                <Skeleton className="h-10 w-1/2 rounded-2xl" />
+              </div>
+              <div className="flex gap-3 px-4 py-3">
+                <Skeleton className="size-8 shrink-0 rounded-full" />
+                <Skeleton className="h-24 w-2/3 rounded-2xl" />
+              </div>
+              <div className="flex flex-row-reverse gap-3 px-4 py-3">
+                <Skeleton className="h-10 w-2/5 rounded-2xl" />
+              </div>
+            </div>
+          </div>
+        ) : hasMessages ? (
+          <MessageList
+            messages={messages}
+            streamingContent={streamingContent}
+            isStreaming={isStreaming}
+            onFork={handleFork}
+          />
+        ) : (
+          <div className="flex flex-1 flex-col items-center justify-center gap-6 p-8">
+            <div className="bg-primary/10 flex size-16 items-center justify-center rounded-2xl">
+              <MessageSquare className="text-primary size-8" />
+            </div>
+            <div className="max-w-md text-center">
+              <h2 className="text-xl font-semibold">What story shall we tell?</h2>
+              <p className="text-muted-foreground mt-3 text-sm">
+                You direct, the AI writes. Describe a scene, introduce a character, or set the stage
+                — the AI will expand your ideas into vivid prose and keep the story moving.
+              </p>
+              <p className="text-muted-foreground mt-2 text-xs italic">
+                Try: &quot;A detective finds an unmarked envelope on her desk&quot;
+              </p>
+            </div>
+            <div className="border-border/50 max-w-md rounded-lg border bg-card/50 p-4">
+              <div className="flex items-center gap-2">
+                <GitBranch className="text-primary size-4" />
+                <span className="text-sm font-medium">Branching Stories</span>
+              </div>
+              <p className="text-muted-foreground mt-2 text-sm">
+                Wonder &quot;what if?&quot; Click <strong>Fork</strong> on any message to branch
+                your story and explore an alternate path — without losing your original narrative.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <ChatInput onSend={sendMessage} disabled={isStreaming} />
+      </div>
+    </div>
+  );
+}
